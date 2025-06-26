@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Portal - Test Organizer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #2c3e50;
+        }
+        .tab {
+            overflow: hidden;
+            border: 1px solid #ccc;
+            background-color: #f1f1f1;
+            border-radius: 5px 5px 0 0;
+        }
+        .tab button {
+            background-color: inherit;
+            float: left;
+            border: none;
+            outline: none;
+            cursor: pointer;
+            padding: 10px 16px;
+            transition: 0.3s;
+            font-size: 16px;
+        }
+        .tab button:hover {
+            background-color: #ddd;
+        }
+        .tab button.active {
+            background-color: #3498db;
+            color: white;
+        }
+        .tabcontent {
+            display: none;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-top: none;
+            border-radius: 0 0 5px 5px;
+        }
+        .active-tab {
+            display: block;
+        }
+        textarea, input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button, input[type="submit"] {
+            background-color: #3498db;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover, input[type="submit"]:hover {
+            background-color: #2980b9;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #3498db;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        .test-link {
+            background-color: #e1f5fe;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            word-break: break-all;
+        }
+        .question-item {
+            background-color: #f9f9f9;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            border-left: 4px solid #3498db;
+        }
+        .correct-answer {
+            color: #27ae60;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Teacher Test Organizer</h1>
+        
+        <div class="tab">
+            <button class="tablinks active" onclick="openTab(event, 'createTest')">Create Test</button>
+            <button class="tablinks" onclick="openTab(event, 'viewResults')">View Results</button>
+            <button class="tablinks" onclick="openTab(event, 'testHistory')">Test History</button>
+        </div>
+        
+        <div id="createTest" class="tabcontent active-tab">
+            <h2>Create New Test</h2>
+            <form id="testForm">
+                <label for="testName">Test Name:</label>
+                <input type="text" id="testName" required>
+                
+                <div id="questionsContainer">
+                    <!-- Questions will be added here -->
+                </div>
+                
+                <button type="button" onclick="addQuestion()">Add Question</button>
+                <input type="submit" value="Create Test">
+            </form>
+            
+            <div id="testLinkContainer" style="display: none;">
+                <h3>Your Test Link:</h3>
+                <div class="test-link" id="testLink"></div>
+                <button onclick="copyTestLink()">Copy Link</button>
+            </div>
+        </div>
+        
+        <div id="viewResults" class="tabcontent">
+            <h2>View Test Results</h2>
+            <div id="resultsContainer">
+                <p>Select a test from Test History to view results.</p>
+            </div>
+        </div>
+        
+        <div id="testHistory" class="tabcontent">
+            <h2>Test History</h2>
+            <table id="historyTable">
+                <thead>
+                    <tr>
+                        <th>Test Name</th>
+                        <th>Date Created</th>
+                        <th>Number of Questions</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="historyTableBody">
+                    <!-- Test history will be loaded here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Open tab function
+        function openTab(evt, tabName) {
+            var i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName("tabcontent");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+            tablinks = document.getElementsByClassName("tablinks");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+            document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.className += " active";
+            
+            if (tabName === 'testHistory') {
+                loadTestHistory();
+            }
+        }
+
+        // Add question to the form
+        let questionCount = 0;
+        function addQuestion() {
+            questionCount++;
+            const container = document.getElementById('questionsContainer');
+            const questionDiv = document.createElement('div');
+            questionDiv.className = 'question-item';
+            questionDiv.innerHTML = `
+                <h4>Question ${questionCount}</h4>
+                <label>Question Text:</label>
+                <textarea name="question${questionCount}" required></textarea>
+                
+                <label>Option A:</label>
+                <input type="text" name="optionA_${questionCount}" required>
+                
+                <label>Option B:</label>
+                <input type="text" name="optionB_${questionCount}" required>
+                
+                <label>Option C:</label>
+                <input type="text" name="optionC_${questionCount}" required>
+                
+                <label>Option D:</label>
+                <input type="text" name="optionD_${questionCount}" required>
+                
+                <label>Correct Answer:</label>
+                <select name="correctAnswer_${questionCount}" required>
+                    <option value="">Select correct answer</option>
+                    <option value="A">A</option>
+                    <option value="B">B</option>
+                    <option value="C">C</option>
+                    <option value="D">D</option>
+                </select>
+                
+                <button type="button" onclick="this.parentNode.remove(); updateQuestionNumbers()">Remove Question</button>
+            `;
+            container.appendChild(questionDiv);
+        }
+
+        // Update question numbers when one is removed
+        function updateQuestionNumbers() {
+            const questions = document.querySelectorAll('.question-item');
+            questionCount = questions.length;
+            questions.forEach((question, index) => {
+                question.querySelector('h4').textContent = `Question ${index + 1}`;
+            });
+        }
+
+        // Handle form submission
+        document.getElementById('testForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const testName = document.getElementById('testName').value;
+            const questions = [];
+            const questionElements = document.querySelectorAll('.question-item');
+            
+            questionElements.forEach((questionEl, index) => {
+                const questionText = questionEl.querySelector('textarea').value;
+                const optionA = questionEl.querySelector('input[name="optionA_' + (index + 1) + '"]').value;
+                const optionB = questionEl.querySelector('input[name="optionB_' + (index + 1) + '"]').value;
+                const optionC = questionEl.querySelector('input[name="optionC_' + (index + 1) + '"]').value;
+                const optionD = questionEl.querySelector('input[name="optionD_' + (index + 1) + '"]').value;
+                const correctAnswer = questionEl.querySelector('select[name="correctAnswer_' + (index + 1) + '"]').value;
+                
+                questions.push({
+                    question: questionText,
+                    options: {
+                        A: optionA,
+                        B: optionB,
+                        C: optionC,
+                        D: optionD
+                    },
+                    correctAnswer: correctAnswer
+                });
+            });
+            
+            const testData = {
+                name: testName,
+                questions: questions,
+                dateCreated: new Date().toISOString()
+            };
+            
+            // Save test to localStorage
+            let tests = JSON.parse(localStorage.getItem('teacherTests') || '[]');
+            tests.push(testData);
+            localStorage.setItem('teacherTests', JSON.stringify(tests));
+            
+            // Generate test link
+            const testId = 'test_' + Date.now();
+            localStorage.setItem(testId, JSON.stringify(testData));
+            
+            const testLink = window.location.href.replace('index.html', 'student.html') + '?test=' + testId;
+            document.getElementById('testLink').textContent = testLink;
+            document.getElementById('testLinkContainer').style.display = 'block';
+            
+            // Reset form
+            document.getElementById('testName').value = '';
+            document.getElementById('questionsContainer').innerHTML = '';
+            questionCount = 0;
+            
+            // Scroll to test link
+            document.getElementById('testLinkContainer').scrollIntoView({ behavior: 'smooth' });
+        });
+
+        // Copy test link to clipboard
+        function copyTestLink() {
+            const link = document.getElementById('testLink').textContent;
+            navigator.clipboard.writeText(link).then(() => {
+                alert('Test link copied to clipboard!');
+            });
+        }
+
+        // Load test history
+        function loadTestHistory() {
+            const tests = JSON.parse(localStorage.getItem('teacherTests') || '[]');
+            const tbody = document.getElementById('historyTableBody');
+            tbody.innerHTML = '';
+            
+            tests.forEach((test, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${test.name}</td>
+                    <td>${new Date(test.dateCreated).toLocaleString()}</td>
+                    <td>${test.questions.length}</td>
+                    <td>
+                        <button onclick="viewTestResults(${index})">View Results</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // View test results
+        function viewTestResults(testIndex) {
+            const tests = JSON.parse(localStorage.getItem('teacherTests') || '[]');
+            const test = tests[testIndex];
+            
+            // Get all student results for this test
+            let allResults = JSON.parse(localStorage.getItem('testResults') || {});
+            const testId = Object.keys(allResults).find(id => id.startsWith('test_') && 
+                JSON.stringify(allResults[id].testData) === JSON.stringify(test));
+            
+            if (!testId || !allResults[testId] || allResults[testId].submissions.length === 0) {
+                document.getElementById('resultsContainer').innerHTML = '<p>No results available for this test yet.</p>';
+                return;
+            }
+            
+            const results = allResults[testId].submissions;
+            
+            // Create results table
+            let html = `<h3>Results for: ${test.name}</h3>`;
+            html += `<p>Total students: ${results.length}</p>`;
+            html += `<table>
+                <thead>
+                    <tr>
+                        <th>Student Name</th>
+                        <th>Questions Attempted</th>
+                        <th>Correct Answers</th>
+                        <th>Wrong Answers</th>
+                        <th>Score</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+            
+            results.forEach(result => {
+                const totalQuestions = result.answers.length;
+                const correctAnswers = result.answers.filter(a => a.isCorrect).length;
+                const wrongAnswers = totalQuestions - correctAnswers;
+                const score = Math.round((correctAnswers / totalQuestions) * 100);
+                
+                html += `
+                    <tr>
+                        <td>${result.studentName}</td>
+                        <td>${totalQuestions}</td>
+                        <td>${correctAnswers}</td>
+                        <td>${wrongAnswers}</td>
+                        <td>${score}%</td>
+                        <td><button onclick="showStudentDetails('${testId}', '${result.studentName}')">View Details</button></td>
+                    </tr>
+                `;
+            });
+            
+            html += `</tbody></table>`;
+            document.getElementById('resultsContainer').innerHTML = html;
+            
+            // Switch to results tab
+            openTab({currentTarget: document.querySelector('.tablinks:nth-child(2)')}, 'viewResults');
+        }
+
+        // Show detailed student results
+        function showStudentDetails(testId, studentName) {
+            const allResults = JSON.parse(localStorage.getItem('testResults') || {};
+            const testResults = allResults[testId];
+            const studentResult = testResults.submissions.find(s => s.studentName === studentName);
+            const testData = testResults.testData;
+            
+            let html = `<h3>Detailed Results for ${studentName}</h3>`;
+            html += `<button onclick="viewTestResults(0)">Back to Summary</button>`;
+            html += `<table>
+                <thead>
+                    <tr>
+                        <th>Question</th>
+                        <th>Student's Answer</th>
+                        <th>Correct Answer</th>
+                        <th>Result</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+            
+            studentResult.answers.forEach((answer, index) => {
+                const question = testData.questions[index];
+                const studentAnswer = answer.answer;
+                const isCorrect = answer.isCorrect;
+                
+                html += `
+                    <tr>
+                        <td>${question.question}</td>
+                        <td>${studentAnswer} (${question.options[studentAnswer]})</td>
+                        <td>${question.correctAnswer} (${question.options[question.correctAnswer]})</td>
+                        <td class="${isCorrect ? 'correct-answer' : ''}">
+                            ${isCorrect ? 'Correct' : 'Incorrect'}
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += `</tbody></table>`;
+            document.getElementById('resultsContainer').innerHTML = html;
+        }
+
+        // Initialize with one question
+        window.onload = function() {
+            addQuestion();
+            loadTestHistory();
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Test Portal</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+        }
+        .test-info {
+            background-color: #e1f5fe;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .question {
+            background-color: #f9f9f9;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            border-left: 4px solid #3498db;
+        }
+        .options {
+            margin-left: 20px;
+        }
+        .option {
+            margin: 10px 0;
+        }
+        input[type="radio"] {
+            margin-right: 10px;
+        }
+        button, input[type="submit"] {
+            background-color: #3498db;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            display: block;
+            margin: 20px auto;
+        }
+        button:hover, input[type="submit"]:hover {
+            background-color: #2980b9;
+        }
+        .result-container {
+            text-align: center;
+        }
+        .score {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin: 20px 0;
+        }
+        .correct {
+            color: #27ae60;
+        }
+        .incorrect {
+            color: #e74c3c;
+        }
+        .student-name-input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="testContainer">
+            <h1 id="testTitle">Loading Test...</h1>
+            <div id="testInfo" class="test-info" style="display: none;">
+                <p>Please answer all questions. Good luck!</p>
+            </div>
+            
+            <form id="studentInfoForm" style="display: none;">
+                <h2>Enter Your Name</h2>
+                <input type="text" id="studentName" class="student-name-input" required placeholder="Your Full Name">
+                <button type="submit">Start Test</button>
+            </form>
+            
+            <form id="testForm" style="display: none;">
+                <div id="questionsList">
+                    <!-- Questions will be loaded here -->
+                </div>
+                <input type="submit" value="Submit Test">
+            </form>
+            
+            <div id="resultDisplay" class="result-container" style="display: none;">
+                <h2>Test Submitted Successfully!</h2>
+                <div class="score">Your Score: <span id="scoreValue">0</span>%</div>
+                <p>Correct Answers: <span id="correctCount" class="correct">0</span></p>
+                <p>Wrong Answers: <span id="wrongCount" class="incorrect">0</span></p>
+                <p>Thank you for completing the test.</p>
+            </div>
+            
+            <div id="errorDisplay" style="display: none; color: red;">
+                <h2>Error</h2>
+                <p id="errorMessage">Test not found.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Get test ID from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const testId = urlParams.get('test');
+        
+        // Load test data
+        function loadTest() {
+            if (!testId) {
+                showError("No test specified in the URL.");
+                return;
+            }
+            
+            const testData = localStorage.getItem(testId);
+            if (!testData) {
+                showError("Test not found. Please check the test link.");
+                return;
+            }
+            
+            const test = JSON.parse(testData);
+            document.getElementById('testTitle').textContent = test.name;
+            document.getElementById('testInfo').style.display = 'block';
+            document.getElementById('studentInfoForm').style.display = 'block';
+            
+            // Store test data for later use
+            window.currentTest = test;
+        }
+        
+        // Show error message
+        function showError(message) {
+            document.getElementById('errorMessage').textContent = message;
+            document.getElementById('errorDisplay').style.display = 'block';
+            document.getElementById('testInfo').style.display = 'none';
+            document.getElementById('studentInfoForm').style.display = 'none';
+        }
+        
+        // Handle student info submission
+        document.getElementById('studentInfoForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const studentName = document.getElementById('studentName').value.trim();
+            
+            if (!studentName) {
+                alert('Please enter your name.');
+                return;
+            }
+            
+            window.studentName = studentName;
+            document.getElementById('studentInfoForm').style.display = 'none';
+            document.getElementById('testForm').style.display = 'block';
+            
+            // Load questions
+            const questionsList = document.getElementById('questionsList');
+            questionsList.innerHTML = '';
+            
+            window.currentTest.questions.forEach((question, index) => {
+                const questionDiv = document.createElement('div');
+                questionDiv.className = 'question';
+                questionDiv.innerHTML = `
+                    <h3>Question ${index + 1}</h3>
+                    <p>${question.question}</p>
+                    <div class="options">
+                        <div class="option">
+                            <input type="radio" id="q${index}_A" name="q${index}" value="A" required>
+                            <label for="q${index}_A">A: ${question.options.A}</label>
+                        </div>
+                        <div class="option">
+                            <input type="radio" id="q${index}_B" name="q${index}" value="B">
+                            <label for="q${index}_B">B: ${question.options.B}</label>
+                        </div>
+                        <div class="option">
+                            <input type="radio" id="q${index}_C" name="q${index}" value="C">
+                            <label for="q${index}_C">C: ${question.options.C}</label>
+                        </div>
+                        <div class="option">
+                            <input type="radio" id="q${index}_D" name="q${index}" value="D">
+                            <label for="q${index}_D">D: ${question.options.D}</label>
+                        </div>
+                    </div>
+                `;
+                questionsList.appendChild(questionDiv);
+            });
+        });
+        
+        // Handle test submission
+        document.getElementById('testForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const test = window.currentTest;
+            const studentName = window.studentName;
+            const answers = [];
+            let correctCount = 0;
+            
+            // Check each question
+            test.questions.forEach((question, index) => {
+                const selectedOption = document.querySelector(`input[name="q${index}"]:checked`);
+                const answer = selectedOption ? selectedOption.value : null;
+                const isCorrect = answer === question.correctAnswer;
+                
+                if (isCorrect) correctCount++;
+                
+                answers.push({
+                    question: question.question,
+                    answer: answer,
+                    isCorrect: isCorrect,
+                    correctAnswer: question.correctAnswer
+                });
+            });
+            
+            const totalQuestions = test.questions.length;
+            const wrongCount = totalQuestions - correctCount;
+            const score = Math.round((correctCount / totalQuestions) * 100);
+            
+            // Display results
+            document.getElementById('testForm').style.display = 'none';
+            document.getElementById('resultDisplay').style.display = 'block';
+            document.getElementById('scoreValue').textContent = score;
+            document.getElementById('correctCount').textContent = correctCount;
+            document.getElementById('wrongCount').textContent = wrongCount;
+            
+            // Save results
+            saveTestResults(test, studentName, answers, score);
+        });
+        
+        // Save test results to localStorage
+        function saveTestResults(test, studentName, answers, score) {
+            let allResults = JSON.parse(localStorage.getItem('testResults') || '{}');
+            
+            if (!allResults[testId]) {
+                allResults[testId] = {
+                    testData: test,
+                    submissions: []
+                };
+            }
+            
+            // Check if student already submitted (prevent duplicate submissions)
+            const existingIndex = allResults[testId].submissions.findIndex(s => s.studentName === studentName);
+            if (existingIndex >= 0) {
+                allResults[testId].submissions[existingIndex] = {
+                    studentName: studentName,
+                    answers: answers,
+                    score: score,
+                    timestamp: new Date().toISOString()
+                };
+            } else {
+                allResults[testId].submissions.push({
+                    studentName: studentName,
+                    answers: answers,
+                    score: score,
+                    timestamp: new Date().toISOString()
+                });
+            }
+            
+            localStorage.setItem('testResults', JSON.stringify(allResults));
+        }
+        
+        // Load test when page loads
+        window.onload = loadTest;
+    </script>
+</body>
+</html>
